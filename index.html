@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมหารค่าข้าว - Bill Splitter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontPrompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between">
+
+    <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 p-2.5 rounded-2xl backdrop-blur-sm">
+                    <i class="fa-solid fa-receipt text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">หารค่าข้าวสไตล์โปร</h1>
+                    <p class="text-xs text-emerald-100">หารยอดรวมเท่ากัน & เช็คยอดจ่ายล่วงหน้า</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="resetAllData()" class="bg-white/10 hover:bg-white/20 text-white text-xs px-3.5 py-2.5 rounded-xl transition font-medium flex items-center space-x-1.5 border border-white/25 active:scale-95">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span class="hidden sm:inline">ล้างข้อมูลใหม่</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Setup Members & Items (7 Cols) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Step 1: Members Card -->
+            <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-sm">1</span>
+                        <h2 class="font-bold text-base sm:text-lg text-slate-900">รายชื่อสมาชิกและการจ่ายล่วงหน้า</h2>
+                    </div>
+                    <span id="memberCount" class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-semibold">0 คน</span>
+                </div>
+                
+                <!-- Tab / Mode toggle for adding members -->
+                <div class="grid grid-cols-2 gap-2 mb-4 bg-slate-100 p-1.5 rounded-2xl text-xs font-semibold">
+                    <button type="button" onclick="switchMemberMode('individual')" id="tabIndividual" class="py-2.5 rounded-xl transition bg-white text-slate-900 shadow-sm">
+                        <i class="fa-solid fa-user-plus mr-1"></i> เพิ่มทีละคน
+                    </button>
+                    <button type="button" onclick="switchMemberMode('quick')" id="tabQuick" class="py-2.5 rounded-xl transition text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-users mr-1"></i> เพิ่มด่วนเป็นจำนวนคน
+                    </button>
+                </div>
+
+                <!-- Mode 1: Individual Form -->
+                <form id="addMemberForm" onsubmit="addMember(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-4">
+                    <div class="sm:col-span-6">
+                        <input type="text" id="memberNameInput" placeholder="ใส่ชื่อเพื่อน เช่น แอม, บี..." 
+                            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-sm text-slate-900 font-medium">
+                    </div>
+                    <div class="sm:col-span-4">
+                        <input type="number" id="memberPaidInput" step="0.25" min="0" placeholder="จ่ายล่วงหน้า (฿)" 
+                            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-sm text-slate-900 font-medium" title="จำนวนเงินที่คนนี้จ่ายออกไปก่อนแล้ว">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-medium transition flex items-center justify-center shadow-lg shadow-emerald-600/20 text-sm active:scale-95">
+                            <i class="fa-solid fa-user-plus text-base"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Mode 2: Quick Bulk Form (Hidden by default) -->
+                <form id="quickMemberForm" onsubmit="addQuickMembers(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-4 hidden">
+                    <div class="sm:col-span-9">
+                        <div class="relative">
+                            <input type="number" id="quickCountInput" min="1" max="100" value="4" placeholder="ระบุจำนวนคน" 
+                                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-sm text-slate-900 font-medium">
+                            <span class="absolute right-4 top-3.5 text-xs text-slate-500 font-medium">คน (คนที่ 1, 2, ...)</span>
+                        </div>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-medium transition flex items-center justify-center shadow-lg shadow-emerald-600/20 text-sm space-x-1.5 active:scale-95">
+                            <i class="fa-solid fa-users"></i>
+                            <span>เพิ่มเพื่อน</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="membersContainer" class="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar p-1">
+                    <div class="text-slate-500 text-sm italic py-3 text-center">ยังไม่มีสมาชิก เพิ่มรายชื่อด้านบนเลยครับ...</div>
+                </div>
+            </div>
+
+            <!-- Step 2: Items & Expenses Card -->
+            <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-sm">2</span>
+                        <h2 class="font-bold text-base sm:text-lg text-slate-900">รายการอาหาร / ค่าใช้จ่าย</h2>
+                    </div>
+                    <span id="itemCount" class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-semibold">0 รายการ</span>
+                </div>
+
+                <form id="addItemForm" onsubmit="addItem(event)" class="space-y-3 mb-5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div class="sm:col-span-7">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อรายการ</label>
+                            <input type="text" id="itemNameInput" placeholder="เช่น พิซซ่า, ชาบู, ค่าอาหารรวม" 
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-900 font-medium">
+                        </div>
+                        <div class="sm:col-span-5">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ราคา (บาท)</label>
+                            <input type="number" id="itemPriceInput" step="0.25" min="0" placeholder="0.00" 
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-900 font-medium">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-semibold transition text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-95">
+                        <i class="fa-solid fa-plus-circle text-base"></i>
+                        <span>เพิ่มรายการอาหาร</span>
+                    </button>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-500 font-bold text-xs">
+                                <th class="pb-3 pl-1">รายการ</th>
+                                <th class="pb-3 text-right">ราคา</th>
+                                <th class="pb-3 text-right pr-1">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="3" class="text-center py-6 text-slate-500 text-sm italic">ยังไม่มีรายการอาหาร</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Summary & Settlement (5 Cols) -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Summary Card -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-5 sm:p-6 shadow-xl sticky top-24">
+                <div class="flex justify-between items-center mb-5 border-b border-slate-700/80 pb-4">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight">สรุปยอดหารเท่ากัน</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 font-medium">เปรียบเทียบยอดที่ต้องจ่าย vs จ่ายล่วงหน้า</p>
+                    </div>
+                    <div class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs px-3 py-1.5 rounded-xl font-bold">
+                        <i class="fa-solid fa-calculator mr-1"></i> ยุติธรรม
+                    </div>
+                </div>
+
+                <!-- Financial totals -->
+                <div class="space-y-3 mb-5 text-sm sm:text-base">
+                    <div class="flex justify-between items-center font-bold pb-3 border-b border-slate-700/80">
+                        <span class="text-slate-200">ยอดรวมทั้งสิ้น</span>
+                        <span id="grandTotalDisplay" class="text-2xl sm:text-3xl font-extrabold text-emerald-400">0.00 <span class="text-xs sm:text-sm text-slate-300 font-normal">บาท</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs sm:text-sm text-emerald-200 bg-emerald-950/60 p-3.5 rounded-2xl border border-emerald-500/30 font-semibold mt-2">
+                        <span>เฉลี่ยจ่ายคนละ (สิทธิ์)</span>
+                        <span id="perPersonDisplay" class="font-extrabold text-lg sm:text-xl text-emerald-300">0.00 บาท</span>
+                    </div>
+                </div>
+
+                <!-- Dedicated Net Settlement Action Summary (Who pays more / gets refund) -->
+                <div class="mb-5 bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fa-solid fa-arrow-right-arrow-left text-emerald-400 text-sm"></i>
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-100 uppercase tracking-wider">ผลสรุป: ต้องจ่ายเพิ่ม / ได้คืน</h3>
+                    </div>
+                    <div id="settlementActionContainer" class="space-y-2.5">
+                        <div class="text-slate-400 text-xs sm:text-sm italic text-center py-3">ยังไม่มีข้อมูลการชำระเงิน</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="copySummaryText()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 px-4 rounded-2xl font-semibold transition text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/30 active:scale-95">
+                        <i class="fa-solid fa-copy text-base"></i>
+                        <span>คัดลอกสรุปบิล</span>
+                    </button>
+                    <button onclick="openReceiptModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 py-3.5 px-4 rounded-2xl font-semibold transition text-xs sm:text-sm flex items-center justify-center space-x-2 active:scale-95">
+                        <i class="fa-solid fa-expand text-base"></i>
+                        <span>ดูใบเสร็จเต็มจอ</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Receipt Modal (Fullscreen for easy screenshot) -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 hidden flex flex-col justify-between overflow-y-auto">
+        <div class="max-w-md w-full mx-auto my-auto p-4 sm:p-6 flex flex-col items-center">
+            <!-- Modal Header Controls -->
+            <div class="w-full flex justify-between items-center mb-3">
+                <div class="text-white text-sm font-bold flex items-center space-x-2">
+                    <i class="fa-solid fa-camera text-emerald-400"></i>
+                    <span>ภาพใบเสร็จสำหรับบันทึกหน้าจอ</span>
+                </div>
+                <button onclick="closeReceiptModal()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition active:scale-95">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Printable Receipt Box -->
+            <div id="modalReceiptContent" class="bg-white w-full rounded-3xl shadow-2xl p-6 sm:p-8 font-mono text-xs sm:text-sm space-y-4 text-slate-800 border border-slate-200">
+                <!-- Dynamic Receipt Content -->
+            </div>
+
+            <!-- Bottom Action in Modal -->
+            <div class="w-full mt-4 flex gap-3">
+                <button onclick="copySummaryText()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center space-x-2 shadow-lg active:scale-95">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>คัดลอกข้อความ</span>
+                </button>
+                <button onclick="closeReceiptModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center space-x-2 active:scale-95">
+                    <i class="fa-solid fa-check"><span>เสร็จสิ้น</span></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 text-sm font-semibold border border-slate-700">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+            <span id="toastMessage">คัดลอกสำเร็จแล้ว</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 py-5 text-center text-xs text-slate-500 font-medium">
+        <p>เว็บหารค่าข้าว &bull; ออกแบบเพื่อความสะดวกสบายและมิตรภาพอันดี</p>
+    </footer>
+
+    <script>
+        let state = {
+            members: [], 
+            items: []
+        };
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('bill_splitter_state');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                    if (state.members.length > 0 && typeof state.members[0] === 'string') {
+                        state.members = state.members.map(name => ({ name, paidBefore: 0 }));
+                    }
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('bill_splitter_state', JSON.stringify(state));
+        }
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderAll();
+        };
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMessage.textContent = message;
+            if (isError) {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+            }
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchMemberMode(mode) {
+            const tabInd = document.getElementById('tabIndividual');
+            const tabQuick = document.getElementById('tabQuick');
+            const formInd = document.getElementById('addMemberForm');
+            const formQuick = document.getElementById('quickMemberForm');
+
+            if (mode === 'individual') {
+                tabInd.className = "py-2.5 rounded-xl transition bg-white text-slate-900 shadow-sm font-bold";
+                tabQuick.className = "py-2.5 rounded-xl transition text-slate-600 hover:text-slate-900 font-semibold";
+                formInd.classList.remove('hidden');
+                formQuick.classList.add('hidden');
+            } else {
+                tabQuick.className = "py-2.5 rounded-xl transition bg-white text-slate-900 shadow-sm font-bold";
+                tabInd.className = "py-2.5 rounded-xl transition text-slate-600 hover:text-slate-900 font-semibold";
+                formQuick.classList.remove('hidden');
+                formInd.classList.add('hidden');
+            }
+        }
+
+        function addMember(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('memberNameInput');
+            const paidInput = document.getElementById('memberPaidInput');
+            
+            let name = nameInput.value.trim();
+            const paidBefore = parseFloat(paidInput.value) || 0;
+            
+            if (!name) {
+                name = `คนที่ ${state.members.length + 1}`;
+            }
+            if (state.members.some(m => m.name === name)) {
+                showToast('มีชื่อนี้ในรายการแล้ว', true);
+                return;
+            }
+
+            state.members.push({ name, paidBefore });
+            nameInput.value = '';
+            paidInput.value = '';
+            saveAndRender();
+            showToast(`เพิ่มสมาชิก "${name}" สำเร็จ`);
+        }
+
+        function addQuickMembers(e) {
+            e.preventDefault();
+            const countInput = document.getElementById('quickCountInput');
+            const count = parseInt(countInput.value);
+
+            if (isNaN(count) || count <= 0) {
+                showToast('กรุณาระบุจำนวนคนให้ถูกต้อง', true);
+                return;
+            }
+
+            let addedCount = 0;
+            for (let i = 1; i <= count; i++) {
+                let baseName = `คนที่ ${state.members.length + 1}`;
+                let counter = 1;
+                while (state.members.some(m => m.name === baseName)) {
+                    counter++;
+                    baseName = `คนที่ ${state.members.length + counter}`;
+                }
+
+                state.members.push({ name: baseName, paidBefore: 0 });
+                addedCount++;
+            }
+
+            countInput.value = '4';
+            saveAndRender();
+            showToast(`เพิ่มสมาชิกด่วนจำนวน ${addedCount} คนสำเร็จ`);
+        }
+
+        function removeMember(name) {
+            state.members = state.members.filter(m => m.name !== name);
+            saveAndRender();
+            showToast(`ลบสมาชิก "${name}" เรียบร้อย`);
+        }
+
+        function updateMemberPaid(name, value) {
+            const val = parseFloat(value) || 0;
+            const member = state.members.find(m => m.name === name);
+            if (member) {
+                member.paidBefore = val;
+                saveToLocalStorage();
+                calculateSplit();
+            }
+        }
+
+        function addItem(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('itemNameInput');
+            const priceInput = document.getElementById('itemPriceInput');
+            
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+
+            if (!name) {
+                showToast('กรุณาระบุชื่อรายการอาหาร', true);
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast('กรุณาระบุราคาให้ถูกต้อง', true);
+                return;
+            }
+
+            const newItem = {
+                id: Date.now().toString(),
+                name: name,
+                price: price
+            };
+
+            state.items.push(newItem);
+            nameInput.value = '';
+            priceInput.value = '';
+            
+            saveAndRender();
+            showToast(`เพิ่มรายการ "${name}" สำเร็จ`);
+        }
+
+        function removeItem(id) {
+            state.items = state.items.filter(item => item.id !== id);
+            saveAndRender();
+            showToast('ลบรายการอาหารเรียบร้อย');
+        }
+
+        function saveAndRender() {
+            saveToLocalStorage();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderMembers();
+            renderItemsTable();
+            calculateSplit();
+        }
+
+        function renderMembers() {
+            const container = document.getElementById('membersContainer');
+            const countBadge = document.getElementById('memberCount');
+            
+            countBadge.textContent = `${state.members.length} คน`;
+
+            if (state.members.length === 0) {
+                container.innerHTML = `<div class="text-slate-500 text-sm italic py-3 text-center">ยังไม่มีสมาชิก เพิ่มรายชื่อด้านบนเลยครับ...</div>`;
+                return;
+            }
+
+            container.innerHTML = state.members.map((member, index) => `
+                <div class="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 transition shadow-sm">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs sm:text-sm shrink-0">${index + 1}</span>
+                        <input type="text" value="${escapeHtml(member.name)}" 
+                            onchange="updateMemberName('${escapeHtml(member.name)}', this.value)"
+                            class="bg-transparent font-bold text-slate-900 text-sm sm:text-base px-2 py-1 rounded hover:bg-white focus:bg-white focus:ring-1 focus:ring-emerald-500 outline-none w-28 sm:w-40 truncate" 
+                            title="คลิกเพื่อแก้ไขชื่อ">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="relative">
+                            <input type="number" min="0" step="0.25" value="${member.paidBefore || 0}" 
+                                oninput="updateMemberPaid('${escapeHtml(member.name)}', this.value)"
+                                placeholder="จ่ายล่วงหน้า" 
+                                class="w-28 sm:w-36 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-right text-slate-900">
+                            <span class="absolute right-3 top-2.5 text-xs sm:text-sm text-slate-500 font-bold pointer-events-none">฿</span>
+                        </div>
+                        <button onclick="removeMember('${escapeHtml(member.name)}')" class="text-slate-400 hover:text-rose-600 p-2.5 transition">
+                            <i class="fa-solid fa-trash-can text-sm sm:text-base"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateMemberName(oldName, newNameVal) {
+            const newName = newNameVal.trim();
+            if (!newName) {
+                showToast('ชื่อสมาชิกต้องไม่ว่างเปล่า', true);
+                renderMembers();
+                return;
+            }
+            if (oldName === newName) return;
+            if (state.members.some(m => m.name === newName)) {
+                showToast('มีชื่อนี้ในระบบแล้ว', true);
+                renderMembers();
+                return;
+            }
+
+            const member = state.members.find(m => m.name === oldName);
+            if (member) {
+                member.name = newName;
+                saveAndRender();
+                showToast('เปลี่ยนชื่อสมาชิกสำเร็จ');
+            }
+        }
+
+        function renderItemsTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            const itemCountBadge = document.getElementById('itemCount');
+            
+            itemCountBadge.textContent = `${state.items.length} รายการ`;
+
+            if (state.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500 text-sm italic">ยังไม่มีรายการอาหาร</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = state.items.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-3.5 pl-1 font-bold text-slate-900 text-sm sm:text-base">${escapeHtml(item.name)}</td>
+                    <td class="py-3.5 text-right font-bold text-slate-900 text-sm sm:text-base">${formatMoney(item.price)} ฿</td>
+                    <td class="py-3.5 text-right pr-1">
+                        <button onclick="removeItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-2.5 transition">
+                            <i class="fa-solid fa-trash-can text-sm sm:text-base"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function calculateSplit() {
+            let grandTotal = 0;
+            state.items.forEach(item => {
+                grandTotal += item.price;
+            });
+
+            const memberCount = state.members.length;
+            const perPersonShare = memberCount > 0 ? grandTotal / memberCount : 0;
+
+            document.getElementById('grandTotalDisplay').innerHTML = `${formatMoney(grandTotal)} <span class="text-xs sm:text-sm text-slate-300 font-normal">บาท</span>`;
+            document.getElementById('perPersonDisplay').textContent = `${formatMoney(perPersonShare)} บาท`;
+
+            renderSettlementActions(perPersonShare);
+
+            return {
+                grandTotal,
+                perPersonShare
+            };
+        }
+
+        function renderSettlementActions(perPersonShare) {
+            const container = document.getElementById('settlementActionContainer');
+
+            if (state.members.length === 0) {
+                container.innerHTML = `<div class="text-slate-400 text-xs sm:text-sm italic text-center py-3">ยังไม่มีข้อมูลการชำระเงิน</div>`;
+                return;
+            }
+
+            let html = '';
+            state.members.forEach(memberObj => {
+                const name = memberObj.name;
+                const paidBefore = memberObj.paidBefore || 0;
+                const balance = paidBefore - perPersonShare;
+
+                if (balance > 0.01) {
+                    html += `
+                        <div class="bg-sky-500/10 border border-sky-500/40 rounded-2xl p-3.5 flex items-center justify-between text-xs sm:text-sm">
+                            <div class="flex items-center space-x-3 min-w-0 pr-2">
+                                <span class="w-7 h-7 rounded-full bg-sky-500/20 text-sky-300 font-bold flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid fa-arrow-down"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-slate-100 text-sm sm:text-base block truncate">${escapeHtml(name)}</span>
+                                    <div class="text-xs text-slate-300 font-medium">จ่ายล่วงหน้า ${formatMoney(paidBefore)}฿ (สิทธิ์ ${formatMoney(perPersonShare)}฿)</div>
+                                </div>
+                            </div>
+                            <span class="text-sky-300 font-extrabold text-right shrink-0">ได้คืน<br><span class="text-sm sm:text-base">${formatMoney(balance)} ฿</span></span>
+                        </div>
+                    `;
+                } else if (balance < -0.01) {
+                    html += `
+                        <div class="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-3.5 flex items-center justify-between text-xs sm:text-sm">
+                            <div class="flex items-center space-x-3 min-w-0 pr-2">
+                                <span class="w-7 h-7 rounded-full bg-rose-500/20 text-rose-300 font-bold flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid fa-arrow-up"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-slate-100 text-sm sm:text-base block truncate">${escapeHtml(name)}</span>
+                                    <div class="text-xs text-slate-300 font-medium">จ่ายล่วงหน้า ${formatMoney(paidBefore)}฿ (สิทธิ์ ${formatMoney(perPersonShare)}฿)</div>
+                                </div>
+                            </div>
+                            <span class="text-rose-300 font-extrabold text-right shrink-0">ต้องจ่ายเพิ่ม<br><span class="text-sm sm:text-base">${formatMoney(Math.abs(balance))} ฿</span></span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="bg-emerald-500/10 border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between text-xs sm:text-sm">
+                            <div class="flex items-center space-x-3 min-w-0 pr-2">
+                                <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid fa-check"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-slate-100 text-sm sm:text-base block truncate">${escapeHtml(name)}</span>
+                                    <div class="text-xs text-slate-300 font-medium">จ่ายล่วงหน้า ${formatMoney(paidBefore)}฿ (สิทธิ์ ${formatMoney(perPersonShare)}฿)</div>
+                                </div>
+                            </div>
+                            <span class="text-emerald-300 font-extrabold text-xs sm:text-sm shrink-0">จ่ายครบพอดี 🎯</span>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function copySummaryText() {
+            if (state.members.length === 0) {
+                showToast('ไม่มีข้อมูลสมาชิกสำหรับคัดลอก', true);
+                return;
+            }
+
+            const data = calculateSplit();
+            let text = `🧾 สรุปยอดหารเท่ากัน\n`;
+            text += `-----------------------------------\n`;
+            state.items.forEach((item, idx) => {
+                text += `${idx + 1}. ${item.name} = ${formatMoney(item.price)}฿\n`;
+            });
+            text += `-----------------------------------\n`;
+            text += `รวมสุทธิ: ${formatMoney(data.grandTotal)} ฿\n`;
+            text += `เฉลี่ยคนละ: ${formatMoney(data.perPersonShare)} ฿ (${state.members.length} คน)\n`;
+            text += `-----------------------------------\n`;
+            text += `💸 สรุปสถานะการชำระเงิน:\n`;
+            
+            state.members.forEach(memberObj => {
+                const paid = memberObj.paidBefore || 0;
+                const diff = paid - data.perPersonShare;
+                text += `• ${memberObj.name}: จ่ายล่วงหน้า ${formatMoney(paid)} ฿ -> `;
+                if (diff > 0.01) text += `ได้คืน ${formatMoney(diff)} ฿\n`;
+                else if (diff < -0.01) text += `ต้องจ่ายเพิ่ม ${formatMoney(Math.abs(diff))} ฿\n`;
+                else text += `ครบพอดี 🎯\n`;
+            });
+            text += `-----------------------------------\n`;
+            text += `คำนวณผ่านเว็บหารค่าข้าวโปร`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('คัดลอกสรุปบิลไปที่คลิปบอร์ดแล้ว!');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('คัดลอกสรุปบิลสำเร็จ!');
+            } catch (err) {
+                showToast('ไม่สามารถคัดลอกได้', true);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function openReceiptModal() {
+            if (state.members.length === 0) {
+                showToast('ยังไม่มีข้อมูลสำหรับสร้างใบเสร็จ', true);
+                return;
+            }
+
+            const data = calculateSplit();
+            const modalContent = document.getElementById('modalReceiptContent');
+            
+            let html = `
+                <div class="text-center border-b border-dashed border-slate-300 pb-3">
+                    <p class="font-bold text-base text-slate-900 tracking-wider">RECEIPT SUMMARY</p>
+                    <p class="text-xs text-slate-500 mt-0.5">${new Date().toLocaleDateString('th-TH', { dateStyle: 'full' })}</p>
+                </div>
+                <div class="space-y-2 py-3 border-b border-dashed border-slate-300">
+                    <p class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-1.5">รายการอาหาร (${state.items.length} รายการ):</p>
+            `;
+            
+            state.items.forEach(item => {
+                html += `
+                    <div class="flex justify-between text-slate-700 font-medium text-xs sm:text-sm">
+                        <span class="truncate pr-2">${escapeHtml(item.name)}</span>
+                        <span class="font-bold shrink-0">${formatMoney(item.price)} ฿</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+                <div class="space-y-2 py-3 border-b border-dashed border-slate-300 text-xs sm:text-sm">
+                    <div class="flex justify-between font-extrabold text-slate-900 text-sm sm:text-base"><span>ยอดรวมสุทธิ</span><span class="text-emerald-600">${formatMoney(data.grandTotal)} ฿</span></div>
+                    <div class="flex justify-between font-extrabold text-slate-900 text-sm sm:text-base"><span>เฉลี่ยหารเท่ากัน (${state.members.length} คน)</span><span class="text-emerald-600">${formatMoney(data.perPersonShare)} ฿/คน</span></div>
+                </div>
+                <div class="py-2">
+                    <p class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2.5">สถานะการชำระเงินรายบุคคล:</p>
+                    <div class="space-y-2">
+            `;
+
+            state.members.forEach(memberObj => {
+                const name = memberObj.name;
+                const paid = memberObj.paidBefore || 0;
+                const diff = paid - data.perPersonShare;
+
+                let diffText = '';
+                let diffClass = '';
+                if (diff > 0.01) {
+                    diffText = `ได้คืน ${formatMoney(diff)} ฿`;
+                    diffClass = 'text-sky-600';
+                } else if (diff < -0.01) {
+                    diffText = `ต้องจ่ายเพิ่ม ${formatMoney(Math.abs(diff))} ฿`;
+                    diffClass = 'text-rose-600';
+                } else {
+                    diffText = 'จ่ายครบพอดี 🎯';
+                    diffClass = 'text-emerald-600';
+                }
+
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-2xl space-y-1 border border-slate-200 text-xs sm:text-sm">
+                        <div class="flex justify-between items-center font-bold text-slate-900">
+                            <span class="truncate pr-2">${escapeHtml(name)}</span>
+                            <span class="text-slate-500 font-medium shrink-0">จ่ายล่วงหน้า: ${formatMoney(paid)} ฿</span>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <span class="${diffClass} font-extrabold">${diffText}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+                <div class="text-center pt-3 border-t border-dashed border-slate-300 text-[11px] text-slate-400 font-medium">
+                    <p>*** ขอบคุณที่ใช้บริการเว็บหารค่าข้าวโปร ***</p>
+                </div>
+            `;
+
+            modalContent.innerHTML = html;
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+        }
+
+        function resetAllData() {
+            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดและเริ่มใหม่ใช่หรือไม่?')) {
+                state = {
+                    members: [],
+                    items: []
+                };
+                saveAndRender();
+                showToast('ล้างข้อมูลเรียบร้อยแล้ว');
+            }
+        }
+
+        function formatMoney(amount) {
+            return amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
